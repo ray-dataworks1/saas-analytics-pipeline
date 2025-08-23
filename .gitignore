@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data outputs
+/raw/
+data/
+*.parquet
+*.csv
+*.jsonl
+
+# Virtual env
+.env/
+.venv/
+env/
+venv/
+ENV/
+pip-selfcheck.json
+
+# dbt artifacts
+dbt_modules/
+dbt_packages/
+dbt.log
+target/
+profiles.yml
+
+# Orchestration
+.airflow/
+prefect/
+
+# Secrets
+.env
+*.secrets
+secrets.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp
+*.bak
