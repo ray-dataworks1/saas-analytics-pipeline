@@ -85,6 +85,11 @@ fx_rates.csv
 5. (Optional) Set up orchestrator for scheduled builds  
 6. (Optional) PR for CI/CD run
 
+## Version Update:
+
+Will be using BigQuery instead of Snowflake for this project to design partitioning and clustering 
+with pedagogical clarity + a mental model transferrable to any stack in future.
+
 ---
 
 ## 🙋‍♀️ Author
