@@ -1,0 +1,20 @@
+# Core data gen + file handling
+pandas
+numpy
+faker
+pyarrow
+fastparquet
+
+# Warehouse clients
+google-cloud-bigquery
+
+# dbt
+dbt-bigquery
+
+# (Stretch) Contracts + configs
+pydantic
+pyyaml
+
+# (Optional) UX
+tqdm
+rich
