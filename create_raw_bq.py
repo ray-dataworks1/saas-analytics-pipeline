@@ -89,7 +89,7 @@ CREATE TABLE `{PROJECT}.{DATASET}.payments`
   fee_amount NUMERIC,
   tax_amount NUMERIC,
   refund_amount NUMERIC,
-  raw_payload JSON
+  raw_payload STRING
 )
 PARTITION BY DATE(paid_ts)
 CLUSTER BY org_id, order_id;
@@ -104,8 +104,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.events`
   user_id STRING,
   org_id STRING,
   event_type STRING,
-  context JSON,
-  properties JSON
+  context STRING,
+  properties STRING 
 )
 PARTITION BY DATE(event_ts)
 CLUSTER BY org_id, event_type;
@@ -123,3 +123,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
