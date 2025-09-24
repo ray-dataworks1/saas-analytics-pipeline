@@ -1,15 +1,17 @@
-# load_to_bigquery.py
-import glob, os, pathlib
+# load_into_bigquery.py  (bronze layer loader with row-count audit)
+import os, pathlib, glob, json, datetime
 from google.cloud import bigquery
 
-PROJECT   = "saas-analytics-pipeline"    
-DATASET   = "raw"              # landing dataset
-CLIENT    = bigquery.Client(project=PROJECT)
+PROJECT  = "saas-analytics-pipeline"
+DATASET  = "raw"          # landing dataset
+AUDIT_T  = "raw__audit"   # (schema: table_name STRING, load_rows INT64,
+                          #          bq_rows INT64, load_ts TIMESTAMP)
+CLIENT   = bigquery.Client(project=PROJECT)
 
-from google.cloud import bigquery
-
+# ---------- static schema dict  ----------
+from google.cloud import bigquery   # keep import local for autocompletion
 SCHEMAS = {
-    "orgs": [
+ "orgs": [
         bigquery.SchemaField("org_id", "STRING"),
         bigquery.SchemaField("org_name", "STRING"),
         bigquery.SchemaField("plan_id", "STRING"),
@@ -74,23 +76,66 @@ SCHEMAS = {
     ],
 }
 
+# ---------- helpers ----------
+def get_row_count(table: str) -> int:
+    """Return COUNT(*) for a fully-qualified table."""
+    sql = f"SELECT COUNT(*) AS c FROM `{PROJECT}.{DATASET}.{table}`"
+    return list(CLIENT.query(sql))[0].c
 
+# def log_audit(table: str, load_rows: int, bq_rows: int) -> None:
+#     """Create the audit table if needed, then append one row using DML (no streaming)."""
+#     audit_fqn = f"`{PROJECT}.{DATASET}.{AUDIT_T}`"   # full path, 3 parts
+    
+#     # Ensure table exists
+#     CLIENT.query(f"""
+#         CREATE TABLE IF NOT EXISTS {audit_fqn} (
+#             table_name STRING,
+#             load_rows  INT64,
+#             bq_rows    INT64,
+#             load_ts    TIMESTAMP
+#         )
+#     """).result()
 
-def load_table(table_name, file_path):
+#     # Append one row
+#     CLIENT.query(
+#         f"""
+#         INSERT INTO {audit_fqn} (table_name, load_rows, bq_rows, load_ts)
+#         VALUES (@t, @lr, @br, CURRENT_TIMESTAMP())
+#         """,
+#         job_config=bigquery.QueryJobConfig(
+#             query_parameters=[
+#                 bigquery.ScalarQueryParameter("t",  "STRING", table),
+#                 bigquery.ScalarQueryParameter("lr", "INT64",  load_rows),
+#                 bigquery.ScalarQueryParameter("br", "INT64",  bq_rows),
+#             ]
+#         ),
+#     ).result()
+
+def load_table(table_name: str, file_path: str):
     job_config = bigquery.LoadJobConfig(
-        source_format=bigquery.SourceFormat.PARQUET,
-        write_disposition="WRITE_TRUNCATE",
-        schema=SCHEMAS[table_name],
+        source_format = bigquery.SourceFormat.PARQUET,
+        write_disposition = "WRITE_TRUNCATE",
+        schema = SCHEMAS[table_name],
     )
-
     with open(file_path, "rb") as f:
         load_job = CLIENT.load_table_from_file(
             f,
             f"{PROJECT}.{DATASET}.{table_name}",
-            job_config=job_config,
+            job_config = job_config,
         )
-    load_job.result()
-    print(f"Loaded {table_name} → {load_job.output_rows} rows")
+    load_job.result()                       # blocks until done
 
-for tbl in ["orgs", "users", "products", "orders", "payments", "events"]:
-    load_table(tbl, f"data/{tbl}.parquet")
+    load_rows = load_job.output_rows        # what the API thinks it loaded
+    bq_rows   = get_row_count(table_name)   # what’s actually present
+    status    = "✅" if load_rows == bq_rows else f"❌ ({bq_rows-load_rows:+,} rows)"
+
+    # Console log
+    print(f"{table_name} → loader={load_rows:,} | bq={bq_rows:,} {status}")
+
+    # Persist to audit table
+    # log_audit(table_name, load_rows, bq_rows)
+
+# ---------- main ----------
+if __name__ == "__main__":
+    for tbl in ["orgs", "users", "products", "orders", "payments", "events"]:
+        load_table(tbl, f"data/{tbl}.parquet")

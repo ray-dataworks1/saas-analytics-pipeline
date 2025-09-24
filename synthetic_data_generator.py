@@ -20,6 +20,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from faker import Faker
 from tqdm import tqdm
+import random
+from datetime import datetime, timedelta
+
 
 # -----------------------------------------------------------------------------
 # GLOBAL CONSTANTS
@@ -34,7 +37,9 @@ fake = Faker()
 Faker.seed(42)
 np.random.seed(42)
 
-SCALE_PRESETS = {
+SCALE_PRESETS = {   
+
+    "xs": {"users": 100, "orgs": 20, "products": 10, "orders": 500, "payments": 200, "events": 1000},
     "s": {"users": 10_000, "orgs": 1_000, "products": 500,
           "orders": 100_000, "payments": 40_000, "events": 300_000},
     "m": {"users": 50_000, "orgs": 5_000, "products": 1_000,
@@ -73,6 +78,12 @@ def write_decimal_parquet(df: pd.DataFrame, path: str,
                                  preserve_index=False)
     pq.write_table(table, path, **PARQUET_OPTS)
 
+
+def _recent_date(days_back: int = 30) -> datetime:
+    days = random.randint(0, max_days_back)
+    return datetime.utcnow() - timedelta(days=days)
+
+
 # -----------------------------------------------------------------------------
 # GENERATORS
 # -----------------------------------------------------------------------------
@@ -82,7 +93,7 @@ def generate_orgs(n: int) -> pd.DataFrame:
         "org_name": fake.company(),
         "plan_id": np.random.choice(["basic", "pro", "enterprise"]),
         "is_enterprise": fake.boolean(30),
-        "created_at": _random_date(datetime(2022, 1, 1), datetime.now()),
+        "created_at": _recent_date(365),
         "billing_country": fake.country(),
         "updated_at": datetime.now(),
     } for _ in range(n)]
@@ -94,7 +105,7 @@ def generate_users(n: int, org_ids: pd.Series) -> pd.DataFrame:
         "org_id": np.random.choice(org_ids),
         "email": fake.email() if np.random.rand() > 0.02 else None,
         "full_name": fake.name(),
-        "created_at": _random_date(datetime(2023, 1, 1), datetime.now()),
+        "created_at": _recent_date(180),
         "country_code": fake.country_code(),
         "is_deleted": fake.boolean(10),
         "updated_at": datetime.now(),
@@ -110,7 +121,7 @@ def generate_products(n: int) -> pd.DataFrame:
         "title": fake.word(),
         "category": np.random.choice(["apparel", "electronics", "books", "food"]),
         "is_active": fake.boolean(70),
-        "launched_at": _random_date(datetime(2019, 1, 1), datetime.now()),
+        "launched_at":_recent_date(730),
         "updated_at": datetime.now(),
     } for _ in range(n)]
     return coerce_datetime(pd.DataFrame(rows), ["launched_at", "updated_at"])
@@ -174,11 +185,11 @@ def generate_payments(n: int, order_df: pd.DataFrame) -> pd.DataFrame:
     return coerce_datetime(df, ["paid_ts"])
 
 def generate_events(n: int, org_ids, user_ids) -> pd.DataFrame:
-    base_date = datetime.now() - timedelta(days=90)
+    base_date = datetime.now() - timedelta(days=30)
     rows = []
     for _ in range(n):
         event_ts = base_date + timedelta(
-            seconds=np.random.randint(0, 90 * 24 * 3600))
+            seconds=np.random.randint(0, 30 * 24 * 3600))
         props = {"page": fake.word(),
                  "cart_value": float(quantize(np.random.uniform(0, 300)))}
         if np.random.rand() < 0.05:
@@ -210,7 +221,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate synthetic SaaS raw layer "
                     "(TIMESTAMP & DECIMAL-safe)")
-    parser.add_argument("--scale", choices=["s", "m", "l"], default="s")
+    parser.add_argument("--scale", choices=["xs", "s", "m", "l"], default="s")
     parser.add_argument("--out", default="data")
     args = parser.parse_args()
 
