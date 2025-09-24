@@ -1,5 +1,5 @@
 """
-synthetic_data_generator.py  – TIMESTAMP- & DECIMAL-safe version
+synthetic_data_generator.py   TIMESTAMP- & DECIMAL-safe version
 ----------------------------------------------------------------
 Generates realistic SaaS raw-layer tables (users, orgs, products, orders,
 payments, events) with foreign-key integrity, TIMESTAMP partitions,
@@ -80,8 +80,12 @@ def write_decimal_parquet(df: pd.DataFrame, path: str,
 
 
 def _recent_date(days_back: int = 30) -> datetime:
-    days = random.randint(0, max_days_back)
-    return datetime.utcnow() - timedelta(days=days)
+    days = random.randint(0, days_back)
+    dt = datetime.utcnow() - timedelta(days=days)
+    # Clamp to not exceed current UTC time
+    if dt > datetime.utcnow():
+        dt = datetime.utcnow()
+    return dt
 
 
 # -----------------------------------------------------------------------------
@@ -221,7 +225,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate synthetic SaaS raw layer "
                     "(TIMESTAMP & DECIMAL-safe)")
-    parser.add_argument("--scale", choices=["xs", "s", "m", "l"], default="s")
+    parser.add_argument("--scale", choices=["xs", "s", "m", "l"], default="xs")
     parser.add_argument("--out", default="data")
     args = parser.parse_args()
 

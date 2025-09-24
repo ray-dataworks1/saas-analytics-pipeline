@@ -111,6 +111,7 @@ def get_row_count(table: str) -> int:
 #         ),
 #     ).result()
 
+
 def load_table(table_name: str, file_path: str):
     job_config = bigquery.LoadJobConfig(
         source_format = bigquery.SourceFormat.PARQUET,
@@ -124,6 +125,13 @@ def load_table(table_name: str, file_path: str):
             job_config = job_config,
         )
     load_job.result()                       # blocks until done
+
+    # ── NEW: surface row-level errors (if any) ─────────────────────────
+    if load_job.errors:                       # list of dicts
+        print(f"\n⚠️  {table_name} – sample errors:")
+        for err in load_job.errors[:5]:       # show first few
+            print(" •", err["message"])
+
 
     load_rows = load_job.output_rows        # what the API thinks it loaded
     bq_rows   = get_row_count(table_name)   # what’s actually present
