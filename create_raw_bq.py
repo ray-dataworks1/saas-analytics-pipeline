@@ -24,7 +24,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.orgs`
   updated_at TIMESTAMP
 )
 PARTITION BY DATE(created_at)
-CLUSTER BY org_id;
+CLUSTER BY org_id
+OPTIONS(partition_expiration_days =60);
 """,
     "users": f"""
 DROP TABLE IF EXISTS `{PROJECT}.{DATASET}.users`;
@@ -40,7 +41,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.users`
   updated_at TIMESTAMP
 )
 PARTITION BY DATE(created_at)
-CLUSTER BY org_id, user_id;
+CLUSTER BY org_id, user_id
+OPTIONS(partition_expiration_days =60);
 """,
     "products": f"""
 DROP TABLE IF EXISTS `{PROJECT}.{DATASET}.products`;
@@ -55,7 +57,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.products`
   updated_at TIMESTAMP
 )
 PARTITION BY DATE(launched_at)
-CLUSTER BY category;
+CLUSTER BY category
+OPTIONS(partition_expiration_days =60);
 """,
     "orders": f"""
 DROP TABLE IF EXISTS `{PROJECT}.{DATASET}.orders`;
@@ -73,7 +76,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.orders`
   updated_at TIMESTAMP
 )
 PARTITION BY DATE(order_ts)
-CLUSTER BY org_id, user_id;
+CLUSTER BY org_id, user_id
+OPTIONS(partition_expiration_days =60);
 """,
     "payments": f"""
 DROP TABLE IF EXISTS `{PROJECT}.{DATASET}.payments`;
@@ -92,7 +96,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.payments`
   raw_payload STRING
 )
 PARTITION BY DATE(paid_ts)
-CLUSTER BY org_id, order_id;
+CLUSTER BY org_id, order_id
+OPTIONS(partition_expiration_days =60);
 """,
     "events": f"""
 DROP TABLE IF EXISTS `{PROJECT}.{DATASET}.events`;
@@ -108,7 +113,8 @@ CREATE TABLE `{PROJECT}.{DATASET}.events`
   properties STRING 
 )
 PARTITION BY DATE(event_ts)
-CLUSTER BY org_id, event_type;
+CLUSTER BY org_id, event_type
+OPTIONS(partition_expiration_days =60);
 """,
 }
 
