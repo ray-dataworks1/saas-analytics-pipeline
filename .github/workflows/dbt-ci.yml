@@ -1,53 +1,38 @@
-name: dbt CI on PR
+name: dbt CI
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
   dbt-ci:
     runs-on: ubuntu-latest
 
-    #  Set a short-lived service-account key in a file the
-    #  BigQuery adapter expects.  Store the JSON in Settings ▸ Secrets.
     env:
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
-      DBT_ENV_SECRET_BIGQUERY_KEY: ${{ secrets.BIGQUERY_KEY_JSON }}
-      BQ_PROJECT:          ${{ secrets.BQ_PROJECT }}
-      DBT_PROFILES_DIR:    ${{ github.workspace }}/.github/profiles   # lives in repo
+      BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+      BIGQUERY_KEY_JSON: ${{ secrets.BIGQUERY_KEY_JSON }}
+      DBT_PROFILES_DIR: ${{ github.workspace }}/.github/profiles
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write GCP key file
-        run:  echo "$DBT_ENV_SECRET_BIGQUERY_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      # 2️⃣  Use the official dbt-Core Docker image
+      - name: Install dbt-bigquery
+        run: |
+          pip install --upgrade pip
+          pip install "dbt-bigquery==1.8.*"
+
       - name: dbt debug
-        uses:  us-docker.pkg.dev/dbt/adapters/dbt-bigquery@sha256:latest
-        with:
-          entrypoint: dbt
-          args: debug --profile saas_analytics --target ci
+        run: dbt debug --target ci --profile saas_analytics_pipeline
 
-      - name: dbt deps / build
-        if: success()              # ← run only if debug passed
-        uses:  us-docker.pkg.dev/dbt/adapters/dbt-bigquery@sha256:latest
-        with:
-          entrypoint: /bin/bash
-          args: |
-            -c "
-            dbt deps            \
-              && dbt build \
-                   --profile saas_analytics \
-                   --target ci \
-                   --warn-error
-            "
-
-      - name: Upload run artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dbt-run-results
-          path: |
-            target/run_results.json
-            target/manifest.json
+      - name: dbt build
+        if: success()
+        run: |
+          dbt deps
+          dbt build --target ci --profile saas_analytics_pipeline --warn-error
