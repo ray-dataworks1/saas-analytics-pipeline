@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Write keyfile.json
+        run: |
+          echo "$BIGQUERY_KEY_JSON" > /tmp/key.json
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
