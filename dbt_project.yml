@@ -1,0 +1,61 @@
+name: 'saas_analytics_pipeline'
+version: '1.0.0'
+config-version: 2
+
+profile: 'saas_analytics_pipeline'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+docs-paths: ["docs"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+# vars:
+#   start_date: '2020-01-01'
+#   include_test_accounts: false
+
+models:
+  saas_analytics_pipeline:
+    +materialized: view
+
+    raw:
+      +materialized: view
+      +schema: raw
+    staging:
+      +materialized: view
+      +schema: staging
+      
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    
+    marts:
+      +materialized: table
+      +schema: mart
+      
+      # finance:
+      #   +schema: analytics_finance
+      #   +tags: ["finance", "daily"]
+      
+      # marketing:
+      #   +schema: analytics_marketing
+      #   +tags: ["marketing"]
+
+# seeds:
+#   saas_analytics_pipeline:
+#     +schema: reference_data
+
+# snapshots:
+#   saas_analytics_pipeline:
+#     +target_schema: snapshots
+
+# on-run-end:
+#   - "grant select on all tables in schema {{ target.schema }} to role analyst"

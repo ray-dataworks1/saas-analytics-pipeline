@@ -1,0 +1,140 @@
+# saas_analytics/models/raw/schema.yml
+version: 2
+
+sources:
+  - name: raw                       # dataset = <BQ_PROJECT>.raw
+    database: "{{ env_var('BQ_PROJECT') }}"   # keeps CI/CD flexible
+    description: "Source data from SaaS Analytics Pipeline, loaded via Python scripts"
+    schema: raw
+    loaded_at_field: created_at      # fallback if table-level value missing
+
+    tables:
+      - name: orgs
+        loaded_at_field: created_at
+        freshness: {warn_after: {count: 24, period: hour}}
+        columns:
+          - name: org_id
+            tests: [unique, not_null]
+          - name: org_name
+          - name: plan_id
+          - name: created_at
+          - name: is_enterprise
+          - name: billing_country
+          - name: updated_at
+
+      - name: users
+        loaded_at_field: created_at
+        columns:
+          - name: user_id
+            tests: [unique, not_null]
+          - name: org_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw', 'orgs')
+                  field: org_id
+          - name: email
+          - name: full_name
+          - name: country_code
+          - name: is_deleted
+          - name: created_at
+          - name: updated_at
+
+      - name: products
+        loaded_at_field: launched_at
+        columns:
+          - name: product_id
+            tests: [unique, not_null]
+          - name: sku
+          - name: category
+          - name: is_active
+          - name: launched_at
+          - name: updated_at
+
+      - name: orders
+        loaded_at_field: order_ts
+        columns:
+          - name: order_id
+            tests: [unique, not_null]
+          - name: org_id
+            tests:
+              - relationships:
+                  to: source('raw', 'orgs')
+                  field: org_id
+          - name: user_id
+            tests:
+              - relationships:
+                  to: source('raw', 'users')
+                  field: user_id
+          - name: product_id
+            tests:
+              - relationships:
+                  to: source('raw', 'products')
+                  field: product_id
+          - name: quantity
+          - name: unit_price
+          - name: currency
+          - name: status
+          - name: order_ts
+          - name: updated_at
+
+      - name: payments
+        loaded_at_field: paid_ts
+        columns:
+          - name: charge_id
+            tests: [unique, not_null]
+          - name: order_id
+            tests:
+              - relationships:
+                  to: source('raw', 'orders')
+                  field: order_id
+          - name: org_id
+          - name: amount
+          - name: currency
+          - name: paid_ts
+          - name: status
+          - name: fee_amount
+          - name: tax_amount
+          - name: refund_amount
+          - name: raw_payload
+
+      - name: events
+        loaded_at_field: event_ts
+        columns:
+          - name: event_id
+            tests: [unique, not_null]
+          - name: event_ts
+          - name: received_ts
+          - name: user_id
+            tests:
+              - relationships:
+                  to: source('raw', 'users')
+                  field: user_id
+          - name: org_id
+            tests:
+              - relationships:
+                  to: source('raw', 'orgs')
+                  field: org_id
+          - name: event_type
+          - name: context
+          - name: properties
+      - name: raw_audit
+        loaded_at_field: load_ts
+        columns:
+          - name: table_name
+            description: "Table name"
+            tests:
+              - unique
+              - not_null
+          - name: load_rows
+            description: "Rows loaded according to loader"
+            tests:
+              - not_null
+          - name: bq_rows
+            description: "Rows in BigQuery after load"
+            tests:
+              - not_null
+          - name: load_ts
+            description: "Timestamp when load completed"
+            tests:
+              - not_null
