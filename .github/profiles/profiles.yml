@@ -1,11 +1,12 @@
-saas_analytics_pipeline:         # must match name in dbt_project.yml
+# .github/profiles/profiles.yml
+saas_analytics_pipeline:
   target: ci
   outputs:
     ci:
       type: bigquery
-      method: service-account-json
+      method: service-account        # file-based auth
       project: "{{ env_var('BQ_PROJECT') }}"
-      dataset: ci_raw             # keep separate dataset for CI runs
-      keyfile_json: /tmp/key.json  
+      dataset: ci_raw
+      keyfile: /tmp/key.json         # ← must be indented under ‘ci’
       location: US
       threads: 1
