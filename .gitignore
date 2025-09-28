@@ -23,7 +23,7 @@ dbt_modules/
 dbt_packages/
 dbt.log
 target/
-profiles.yml
+.dbt/profiles.yml
 
 # Orchestration
 .airflow/

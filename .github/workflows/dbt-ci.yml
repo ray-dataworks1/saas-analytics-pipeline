@@ -1,0 +1,53 @@
+name: dbt CI on PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  dbt-ci:
+    runs-on: ubuntu-latest
+
+    #  Set a short-lived service-account key in a file the
+    #  BigQuery adapter expects.  Store the JSON in Settings ▸ Secrets.
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+      DBT_ENV_SECRET_BIGQUERY_KEY: ${{ secrets.BIGQUERY_KEY_JSON }}
+      BQ_PROJECT:          ${{ secrets.BQ_PROJECT }}
+      DBT_PROFILES_DIR:    ${{ github.workspace }}/.github/profiles   # lives in repo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write GCP key file
+        run:  echo "$DBT_ENV_SECRET_BIGQUERY_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      # 2️⃣  Use the official dbt-Core Docker image
+      - name: dbt debug
+        uses:  us-docker.pkg.dev/dbt/adapters/dbt-bigquery@sha256:latest
+        with:
+          entrypoint: dbt
+          args: debug --profile saas_analytics --target ci
+
+      - name: dbt deps / build
+        if: success()              # ← run only if debug passed
+        uses:  us-docker.pkg.dev/dbt/adapters/dbt-bigquery@sha256:latest
+        with:
+          entrypoint: /bin/bash
+          args: |
+            -c "
+            dbt deps            \
+              && dbt build \
+                   --profile saas_analytics \
+                   --target ci \
+                   --warn-error
+            "
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-run-results
+          path: |
+            target/run_results.json
+            target/manifest.json

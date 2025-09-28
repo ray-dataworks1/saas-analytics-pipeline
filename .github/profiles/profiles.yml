@@ -1,0 +1,11 @@
+saas_analytics_pipeline:         # must match name in dbt_project.yml
+  target: ci
+  outputs:
+    ci:
+      type: bigquery
+      method: service-account-json
+      project: "{{ env_var('BQ_PROJECT') }}"
+      dataset: ci_raw             # keep separate dataset for CI runs
+      keyfile_json: "{{ env_var('BIGQUERY_KEY_JSON') }}"
+      location: US
+      threads: 1
