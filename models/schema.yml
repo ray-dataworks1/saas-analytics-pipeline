@@ -118,6 +118,7 @@ sources:
           - name: event_type
           - name: context
           - name: properties
+
       - name: raw_audit
         loaded_at_field: load_ts
         columns:
