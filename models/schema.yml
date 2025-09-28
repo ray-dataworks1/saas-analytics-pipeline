@@ -31,7 +31,6 @@ sources:
             tests:
               - not_null
               - relationships:
-                arguments:
                   to: source('raw', 'orgs')
                   field: org_id
           - name: email
@@ -60,19 +59,16 @@ sources:
           - name: org_id
             tests:
               - relationships:
-                arguments:
                   to: source('raw', 'orgs')
                   field: org_id
           - name: user_id
             tests:
               - relationships:
-                arguments:
                   to: source('raw', 'users')
                   field: user_id
           - name: product_id
             tests:
               - relationships:
-                arguments:
                   to: source('raw', 'products')
                   field: product_id
           - name: quantity
@@ -90,7 +86,6 @@ sources:
           - name: order_id
             tests:
               - relationships:
-                arguments:
                   to: source('raw', 'orders')
                   field: order_id
           - name: org_id
@@ -113,13 +108,11 @@ sources:
           - name: user_id
             tests:
               - relationships:
-                arguments:
                   to: source('raw', 'users')
                   field: user_id
           - name: org_id
             tests:
               - relationships:
-                arguments:
                   to: source('raw', 'orgs')
                   field: org_id
           - name: event_type
