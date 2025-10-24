@@ -49,9 +49,11 @@ models:
       #   +schema: analytics_marketing
       #   +tags: ["marketing"]
 
-# seeds:
-#   saas_analytics_pipeline:
-#     +schema: reference_data
+seeds:
+  +quote_columns: false
+  +schema: raw      
+  +file_format: csv
+  +delimiter: ","
 
 # snapshots:
 #   saas_analytics_pipeline:
